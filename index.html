@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="accueil">
+    <h2 class="tarif-title">{{ t('tarif') }}</h2>
+    <div class="services-grid">
+        <div class="service-card">
+            <h3>{{ t('onglerie') }}</h3>
+            <div class="service-image">
+                <img src="{{ url_for('static', filename='images/onglerie.jpg') }}" alt="Onglerie">
+            </div>
+        </div>
+        <div class="service-card">
+            <h3>{{ t('epilation') }}</h3>
+            <div class="service-image">
+                <img src="{{ url_for('static', filename='images/epilation.jpg') }}" alt="Epilation">
+            </div>
+        </div>
+        <div class="service-card">
+            <h3>{{ t('massage') }}</h3>
+            <div class="service-image">
+                <img src="{{ url_for('static', filename='images/massage.jpg') }}" alt="Massage">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

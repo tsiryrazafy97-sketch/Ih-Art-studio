@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="admin-edit-user-container">
+    <h1>✏️ Modifier utilisateur</h1>
+    <form method="POST">
+        <input type="text" name="nom" value="{{ user.nom }}" required>
+        <input type="date" name="date_naissance" value="{{ user.date_naissance }}" required>
+        <div class="radio-group">
+            <label><input type="radio" name="sexe" value="homme" {% if user.sexe == 'homme' %}checked{% endif %}> 👨 Homme</label>
+            <label><input type="radio" name="sexe" value="femme" {% if user.sexe == 'femme' %}checked{% endif %}> 👩 Femme</label>
+        </div>
+        <input type="email" name="email" value="{{ user.email or '' }}" placeholder="Email">
+        <input type="tel" name="telephone" value="{{ user.telephone or '' }}" placeholder="Téléphone">
+        <div class="checkbox-group">
+            <label><input type="checkbox" name="is_admin" {% if user.is_admin %}checked{% endif %}> 👑 Administrateur</label>
+        </div>
+        <button type="submit">💾 Enregistrer</button>
+    </form>
+    <a href="/admin/utilisateurs" class="back-btn">← Retour</a>
+</div>
+{% endblock %}

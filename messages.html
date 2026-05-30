@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="messages-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>📨 Messages</h1>
+        <a href="/messages/nouveau" class="btn-message" style="background: #ff00b4; color: white; padding: 10px 20px; border-radius: 25px; text-decoration: none;">✏️ Nouveau message</a>
+    </div>
+    
+    <div class="conversations-list">
+        {% for conv in conversations %}
+        <a href="/conversation/{{ conv.autre_id }}" class="conversation-item">
+            <div class="conversation-photo" style="position: relative;">
+                {% if conv.autre_photo %}
+                    <img src="{{ url_for('static', filename=conv.autre_photo) }}" alt="photo">
+                {% else %}
+                    👤
+                {% endif %}
+                <span class="status-dot {% if conv.autre_en_ligne %}online{% else %}offline{% endif %}"></span>
+            </div>
+            <div class="conversation-info">
+                <div class="conversation-nom">{{ conv.autre_nom }}</div>
+                <div class="conversation-last-message">{{ conv.last_message[:50] }}</div>
+            </div>
+            <div class="conversation-date">
+                {{ conv.last_message_date[:16] if conv.last_message_date else '' }}
+                {% if conv.non_lus > 0 %}
+                <span class="non-lus-badge">{{ conv.non_lus }}</span>
+                {% endif %}
+            </div>
+        </a>
+        {% else %}
+        <div style="padding: 40px; text-align: center; color: #888;">
+            Aucune conversation<br>
+            <a href="/messages/nouveau" style="color: #ff00b4;">Envoyer un premier message</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

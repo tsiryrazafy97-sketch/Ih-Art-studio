@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="recherche-container">
+    <h1>{{ t('recherche') }}</h1>
+    <form method="GET">
+        <input type="text" name="q" placeholder="Rechercher..." value="{{ query }}">
+        <select name="source">
+            <option value="both" {% if source=='both' %}selected{% endif %}>Tous</option>
+            <option value="site" {% if source=='site' %}selected{% endif %}>Site</option>
+            <option value="internet" {% if source=='internet' %}selected{% endif %}>Internet</option>
+        </select>
+        <button type="submit">{{ t('rechercher') }}</button>
+    </form>
+    {% if query %}
+        <h3>Résultats site ({{ site_results|length }})</h3>
+        {% for r in site_results %}<div class="result"><p>{{ r.description[:100] }}</p><small>{{ r.date_publication }}</small></div>{% endfor %}
+        {% if internet_results %}<h3>Résultats Internet</h3>{% for r in internet_results %}<div><a href="{{ r.url }}" target="_blank">{{ r.title }}</a></div>{% endfor %}{% endif %}
+    {% endif %}
+</div>
+{% endblock %}

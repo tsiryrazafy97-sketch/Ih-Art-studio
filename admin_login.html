@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Admin</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<div class="admin-login-container">
+    <div class="admin-login-box">
+        <h1>{{ t('acces_admin') }}</h1>
+        <form method="POST" action="/admin/verifier">
+            <input type="password" name="admin_code" placeholder="{{ t('admin_code') }}" required>
+            <button type="submit">{{ t('se_connecter_btn') }}</button>
+        </form>
+        <a href="/" style="color:white">← Retour</a>
+    </div>
+</div>
+</body>
+</html>

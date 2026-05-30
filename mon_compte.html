@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mon-compte-container">
+    <h1>{{ t('mon_compte') }}</h1>
+    <div class="profil-section">
+        <div class="photo-section">
+            <div class="photo-profil">
+                {% if user.photo_profil %}
+                    <img src="{{ url_for('static', filename=user.photo_profil) }}">
+                {% else %}
+                    <div class="photo-placeholder">📷</div>
+                {% endif %}
+            </div>
+            <form method="POST" enctype="multipart/form-data">
+                <input type="file" name="photo_profil" id="photo-input" style="display:none">
+                <button type="button" onclick="document.getElementById('photo-input').click()">{{ t('modifier_photo') }}</button>
+                <button type="submit">{{ t('enregistrer') }}</button>
+            </form>
+        </div>
+        <div class="info-section">
+            <p><strong>{{ t('nom') }}:</strong> {{ user.nom }}</p>
+            <p><strong>{{ t('date_naissance') }}:</strong> {{ user.date_naissance }}</p>
+            <p><strong>{{ t('sexe') }}:</strong> {% if user.sexe == 'homme' %}👨 {{ t('homme') }}{% else %}👩 {{ t('femme') }}{% endif %}</p>
+            <p><strong>Email:</strong> {{ user.email or 'Non renseigné' }}</p>
+            <p><strong>Téléphone:</strong> {{ user.telephone or 'Non renseigné' }}</p>
+            <a href="/modifier-profil" class="modifier-profil-btn">✏️ {{ t('modifier_photo') }}</a>
+        </div>
+    </div>
+    <div class="stats">
+        <div class="stat-card"><span class="stat-number">{{ nb_reactions }}</span> {{ t('mes_reactions') }}</div>
+        <div class="stat-card"><span class="stat-number">{{ nb_commentaires }}</span> {{ t('mes_commentaires') }}</div>
+    </div>
+    <a href="/logout" class="logout-btn">{{ t('deconnexion') }}</a>
+</div>
+{% endblock %}

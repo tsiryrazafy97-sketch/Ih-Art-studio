@@ -1,0 +1,31 @@
+# Base de données
+database.db
+*.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Uploads (fichiers nampidirin'ny mpampiasa)
+static/uploads/profils/*
+static/uploads/messages/*
+!static/uploads/profils/.gitkeep
+!static/uploads/messages/.gitkeep
+
+# Fichiers miafina
+.env
+.secrets
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

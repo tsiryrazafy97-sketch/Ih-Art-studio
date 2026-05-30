@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="messages-container">
+    <h1>✏️ Nouveau message</h1>
+    
+    <form method="POST" enctype="multipart/form-data" id="message-form">
+        <!-- Champ caché ho an'ny ID utilisateur -->
+        <input type="hidden" name="destinataire_id" id="selected-destinataire" required>
+        
+        <!-- Lister les utilisateurs -->
+        <div class="destinataire-list">
+            <h3>👥 Choisir un destinataire:</h3>
+            {% for u in users %}
+            <div class="destinataire-item" data-id="{{ u.id }}" data-nom="{{ u.nom }}" onclick="selectionnerDestinataire(this)">
+                <div class="conversation-photo" style="position: relative;">
+                    {% if u.photo_profil %}
+                        <img src="{{ url_for('static', filename=u.photo_profil) }}" alt="photo">
+                    {% else %}
+                        <div class="no-photo">👤</div>
+                    {% endif %}
+                    <span class="status-dot {% if u.en_ligne %}online{% else %}offline{% endif %}"></span>
+                </div>
+                <div class="destinataire-info">
+                    <strong>{{ u.nom }}</strong>
+                    {% if u.en_ligne %}
+                        <span class="en-ligne-text">● En ligne</span>
+                    {% else %}
+                        <span class="hors-ligne-text">○ Hors ligne</span>
+                    {% endif %}
+                </div>
+                <div class="selection-indicator"></div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Formulaire message -->
+        <div id="message-section" style="display: none;">
+            <textarea name="contenu" id="message-contenu" rows="4" placeholder="Votre message..."></textarea>
+            <div style="margin: 10px 0">
+                <label class="file-label">
+                    📎 Joindre un fichier
+                    <input type="file" name="fichier" id="fichier-input" style="display:none" onchange="this.form.submit()">
+                </label>
+            </div>
+            <button type="submit">📤 Envoyer</button>
+        </div>
+    </form>
+    
+    <a href="/messages" class="back-btn">← Retour</a>
+</div>
+
+<script>
+function selectionnerDestinataire(element) {
+    const id = element.dataset.id;
+    const nom = element.dataset.nom;
+    
+    // Mettre à jour le champ caché
+    document.getElementById('selected-destinataire').value = id;
+    
+    // Enlever la sélection des autres
+    document.querySelectorAll('.destinataire-item').forEach(item => {
+        item.classList.remove('selected');
+        item.querySelector('.selection-indicator').innerHTML = '';
+    });
+    
+    // Ajouter la sélection
+    element.classList.add('selected');
+    element.querySelector('.selection-indicator').innerHTML = '✓';
+    
+    // Afficher la section message
+    document.getElementById('message-section').style.display = 'block';
+    
+    // Changer le titre
+    const titre = document.querySelector('.messages-container h1');
+    titre.innerHTML = `✏️ Nouveau message à ${nom}`;
+}
+</script>
+
+<style>
+.destinataire-list {
+    margin-bottom: 25px;
+}
+
+.destinataire-list h3 {
+    margin-bottom: 15px;
+    color: var(--primary-color);
+}
+
+.destinataire-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+.destinataire-item:hover {
+    background: rgba(255,0,180,0.1);
+    transform: translateX(5px);
+}
+
+.destinataire-item.selected {
+    background: rgba(255,0,180,0.2);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(255,0,180,0.3);
+}
+
+.conversation-photo {
+    position: relative;
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.conversation-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.conversation-photo .no-photo {
+    font-size: 28px;
+}
+
+.status-dot {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--card-bg);
+}
+
+.status-dot.online {
+    background: #2ecc71;
+    box-shadow: 0 0 5px #2ecc71;
+}
+
+.status-dot.offline {
+    background: #95a5a6;
+}
+
+.destinataire-info {
+    flex: 1;
+}
+
+.destinataire-info strong {
+    font-size: 18px;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.en-ligne-text {
+    font-size: 12px;
+    color: #2ecc71;
+}
+
+.hors-ligne-text {
+    font-size: 12px;
+    color: #95a5a6;
+}
+
+.selection-indicator {
+    font-size: 24px;
+    color: var(--primary-color);
+    font-weight: bold;
+    width: 40px;
+    text-align: center;
+}
+
+#message-section {
+    margin-top: 25px;
+    padding-top: 25px;
+    border-top: 1px solid var(--border-color);
+}
+
+#message-section textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--primary-color);
+    border-radius: 15px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-family: inherit;
+    resize: vertical;
+}
+
+.file-label {
+    background: var(--primary-color);
+    color: #000;
+    padding: 8px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    display: inline-block;
+    font-weight: bold;
+}
+
+.back-btn {
+    display: inline-block;
+    margin-top: 20px;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+@media (max-width: 600px) {
+    .destinataire-item {
+        padding: 12px;
+    }
+    .conversation-photo {
+        width: 45px;
+        height: 45px;
+    }
+    .destinataire-info strong {
+        font-size: 16px;
+    }
+}
+</style>
+{% endblock %}

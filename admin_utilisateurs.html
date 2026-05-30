@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="admin-users-container">
+    <h1>👥 Gestion des utilisateurs</h1>
+    <div class="users-table">
+        <table>
+            <thead>
+                <tr><th>ID</th><th>Nom</th><th>Email</th><th>Téléphone</th><th>Role</th><th>Date</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>{{ u.id }}</td>
+                    <td>{{ u.nom }}</td>
+                    <td>{{ u.email or '-' }}</td>
+                    <td>{{ u.telephone or '-' }}</td>
+                    <td>{% if u.is_admin %}👑 Admin{% else %}👤 User{% endif %}</td>
+                    <td>{{ u.date_inscription[:10] }}</td>
+                    <td>
+                        <a href="/admin/editer-user/{{ u.id }}" class="edit-btn">✏️</a>
+                        {% if u.id != session.user_id %}
+                        <form method="POST" action="/admin/supprimer-user/{{ u.id }}" style="display:inline">
+                            <button type="submit" class="delete-btn" onclick="return confirm('Supprimer?')">🗑️</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <a href="/admin/ajouter" class="back-btn">← Retour</a>
+</div>
+{% endblock %}

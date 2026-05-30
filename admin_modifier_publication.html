@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="admin-modifier-container">
+    <h1>✏️ Modifier la publication</h1>
+    
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>📝 Description</label>
+            <textarea name="description" rows="5" required>{{ publication.description }}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>🏷️ Catégorie</label>
+            <div class="radio-group">
+                <label>
+                    <input type="radio" name="categorie" value="tarif" {% if publication.categorie == 'tarif' %}checked{% endif %}> 
+                    💰 Tarif
+                </label>
+                <label>
+                    <input type="radio" name="categorie" value="publication" {% if publication.categorie == 'publication' %}checked{% endif %}> 
+                    📄 Publication
+                </label>
+                <label>
+                    <input type="radio" name="categorie" value="video" {% if publication.categorie == 'video' %}checked{% endif %}> 
+                    🎥 Vidéo
+                </label>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>📎 Type de média</label>
+            <div class="radio-group">
+                <label>
+                    <input type="radio" name="type_media" value="image" {% if publication.type == 'image' %}checked{% endif %} onclick="toggleFields('image')"> 
+                    📷 Image
+                </label>
+                <label>
+                    <input type="radio" name="type_media" value="video" {% if publication.type == 'video' %}checked{% endif %} onclick="toggleFields('video')"> 
+                    🎥 Vidéo
+                </label>
+                <label>
+                    <input type="radio" name="type_media" value="lien" {% if publication.type == 'lien' %}checked{% endif %} onclick="toggleFields('lien')"> 
+                    🔗 Lien YouTube
+                </label>
+            </div>
+        </div>
+        
+        <div id="file-field" class="file-field" style="display: {% if publication.type != 'lien' %}block{% else %}none{% endif %}">
+            <label>📁 Fichier actuel:</label>
+            {% if publication.fichier %}
+                <div class="current-file">
+                    {% if publication.type == 'image' %}
+                        <img src="{{ url_for('static', filename='uploads/' + publication.fichier) }}" alt="Image actuelle" style="max-width: 200px; border-radius: 10px;">
+                    {% elif publication.type == 'video' %}
+                        <video controls style="max-width: 300px;">
+                            <source src="{{ url_for('static', filename='uploads/' + publication.fichier) }}">
+                        </video>
+                    {% endif %}
+                    <p><small>Fichier: {{ publication.fichier }}</small></p>
+                </div>
+            {% endif %}
+            <label>📤 Changer le fichier (optionnel):</label>
+            <input type="file" name="fichier" accept="image/*,video/*">
+            <small>Laissez vide pour garder le fichier actuel</small>
+        </div>
+        
+        <div id="lien-field" class="lien-field" style="display: {% if publication.type == 'lien' %}block{% else %}none{% endif %}">
+            <label>🔗 Lien YouTube actuel:</label>
+            <input type="text" name="lien" value="{{ publication.lien_video or '' }}" placeholder="https://www.youtube.com/watch?v=...">
+            <small>Modifiez le lien si nécessaire</small>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn-save">💾 Enregistrer les modifications</button>
+            <a href="/publications" class="btn-cancel">❌ Annuler</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleFields(type) {
+    const fileField = document.getElementById('file-field');
+    const lienField = document.getElementById('lien-field');
+    
+    if (type === 'lien') {
+        fileField.style.display = 'none';
+        lienField.style.display = 'block';
+    } else {
+        fileField.style.display = 'block';
+        lienField.style.display = 'none';
+    }
+}
+</script>
+
+<style>
+.admin-modifier-container {
+    max-width: 700px;
+    margin: 50px auto;
+    padding: 35px;
+    background: var(--card-bg);
+    border-radius: 25px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(255,0,180,0.2);
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid rgba(255,0,180,0.3);
+    border-radius: 15px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-family: inherit;
+    resize: vertical;
+}
+
+.radio-group {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.radio-group label {
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.file-field, .lien-field {
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(255,0,180,0.05);
+    border-radius: 15px;
+}
+
+.current-file {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+}
+
+.current-file img, .current-file video {
+    max-width: 100%;
+    border-radius: 10px;
+}
+
+.file-field input, .lien-field input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border: 1px solid rgba(255,0,180,0.3);
+    border-radius: 10px;
+    background: var(--bg-color);
+    color: var(--text-color);
+}
+
+small {
+    display: block;
+    margin-top: 5px;
+    color: #888;
+    font-size: 12px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.btn-save {
+    flex: 1;
+    padding: 12px;
+    background: #2ecc71;
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+}
+
+.btn-cancel {
+    flex: 1;
+    padding: 12px;
+    background: #e74c3c;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 30px;
+    font-weight: bold;
+}
+</style>
+{% endblock %}

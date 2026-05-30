@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="publications-container">
+    <h1>{{ t('publication') }}</h1>
+    {% for pub in publications %}
+    <div class="publication-card" id="pub-{{ pub.id }}">
+        <h3>{{ pub.categorie|capitalize }}</h3>
+        <p>{{ pub.description }}</p>
+        
+        {% if pub.type == 'image' and pub.fichier %}
+            <img src="{{ url_for('static', filename='uploads/' + pub.fichier) }}" alt="Image">
+        {% elif pub.type == 'video' and pub.fichier %}
+            <video controls><source src="{{ url_for('static', filename='uploads/' + pub.fichier) }}"></video>
+        {% elif pub.type == 'lien' and pub.lien_video %}
+            <iframe src="{{ pub.lien_video|replace('watch?v=', 'embed/') }}" frameborder="0" allowfullscreen></iframe>
+        {% endif %}
+        
+        <div class="pub-footer">
+            <small>Publié le {{ pub.date_publication[:10] }}</small>
+            <button class="btn-coeur-pub {% if pub.user_a_reagi %}coeur-active{% else %}coeur-inactive{% endif %}" onclick="reagirPublication({{ pub.id }}, this)">
+                ❤️ <span class="nb-coeurs">{{ pub.nb_reactions }}</span>
+            </button>
+        </div>
+        
+        <!-- ACTIONS ADMIN : MODIFIER ET SUPPRIMER -->
+        {% if session.is_admin %}
+        <div class="admin-actions" style="padding: 10px 20px; display: flex; gap: 10px; border-top: 1px solid var(--border-color);">
+            <a href="/admin/modifier-publication/{{ pub.id }}" class="btn-modifier" style="background: #3498db; color: white; padding: 8px 20px; border-radius: 25px; text-decoration: none; display: inline-block; font-size: 14px;">
+                ✏️ Modifier
+            </a>
+            <form method="POST" action="/admin/supprimer-publication/{{ pub.id }}" style="display:inline">
+                <button type="submit" class="btn-supprimer" style="background:#e74c3c; color:white; padding:8px 20px; border-radius:25px; border:none; cursor:pointer; font-size:14px;" onclick="return confirm('Supprimer cette publication?')">
+                    🗑️ Supprimer
+                </button>
+            </form>
+        </div>
+        {% endif %}
+        
+        <!-- SECTION COMMENTAIRES -->
+        <div class="commentaires-section">
+            <h4>💬 {{ t('commentaires') }} (<span id="nb-commentaires-{{ pub.id }}">{{ pub.commentaires|length }}</span>)</h4>
+            <div id="commentaires-container-{{ pub.id }}">
+                {% for cmt in pub.commentaires %}
+                <div class="commentaire" id="commentaire-{{ cmt.id }}">
+                    <div class="commentaire-header">
+                        <div class="commentaire-photo">
+                            {% if cmt.user_photo %}
+                                <img src="{{ url_for('static', filename=cmt.user_photo) }}" alt="photo">
+                            {% else %}
+                                <div class="no-photo">👤</div>
+                            {% endif %}
+                        </div>
+                        <span class="commentaire-nom">{{ cmt.user_nom }}</span>
+                        <span class="commentaire-date">{{ cmt.date_commentaire[:16] }}</span>
+                    </div>
+                    <div class="commentaire-texte">{{ cmt.texte }}</div>
+                    <div class="commentaire-actions">
+                        <button class="btn-coeur-commentaire {% if cmt.user_a_reagi %}coeur-active{% else %}coeur-inactive{% endif %}" onclick="reagirCommentaire({{ cmt.id }}, this)">
+                            ❤️ <span class="nb-coeurs-commentaire">{{ cmt.nb_coeurs or 0 }}</span>
+                        </button>
+                        {% if session.user_id %}
+                        <button class="btn-repondre" onclick="afficherFormulaireReponse({{ cmt.id }})">💬 Répondre</button>
+                        <a href="/messages/nouveau?dest={{ cmt.user_id }}" class="btn-message">📨 Message</a>
+                        {% endif %}
+                    </div>
+                    <div class="reponse-form" id="reponse-form-{{ cmt.id }}" style="display:none">
+                        <input type="text" id="reponse-input-{{ cmt.id }}" placeholder="Votre réponse...">
+                        <button onclick="envoyerReponse({{ pub.id }}, {{ cmt.id }})">Envoyer</button>
+                    </div>
+                    {% if cmt.reponses %}
+                    <div class="reponses-container">
+                        {% for rep in cmt.reponses %}
+                        <div class="commentaire reponse">
+                            <div class="commentaire-header">
+                                <div class="commentaire-photo">
+                                    {% if rep.user_photo %}
+                                        <img src="{{ url_for('static', filename=rep.user_photo) }}" alt="photo">
+                                    {% else %}
+                                        <div class="no-photo">👤</div>
+                                    {% endif %}
+                                </div>
+                                <span class="commentaire-nom">{{ rep.user_nom }}</span>
+                                <span class="commentaire-date">{{ rep.date_commentaire[:16] }}</span>
+                            </div>
+                            <div class="commentaire-texte">{{ rep.texte }}</div>
+                            <div class="commentaire-actions">
+                                <button class="btn-coeur-commentaire {% if rep.user_a_reagi %}coeur-active{% else %}coeur-inactive{% endif %}" onclick="reagirCommentaire({{ rep.id }}, this)">
+                                    ❤️ <span class="nb-coeurs-commentaire">{{ rep.nb_coeurs or 0 }}</span>
+                                </button>
+                                {% if session.user_id %}
+                                <button class="btn-repondre" onclick="afficherFormulaireReponse({{ rep.id }})">💬 Répondre</button>
+                                <a href="/messages/nouveau?dest={{ rep.user_id }}" class="btn-message">📨 Message</a>
+                                {% endif %}
+                            </div>
+                            <div class="reponse-form" id="reponse-form-{{ rep.id }}" style="display:none">
+                                <input type="text" id="reponse-input-{{ rep.id }}" placeholder="Votre réponse...">
+                                <button onclick="envoyerReponse({{ pub.id }}, {{ rep.id }})">Envoyer</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% if session.user_id %}
+            <div class="comment-form">
+                <input type="text" id="comment-input-{{ pub.id }}" placeholder="Votre commentaire...">
+                <button onclick="envoyerCommentaire({{ pub.id }})">{{ t('publier') }}</button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+function envoyerCommentaire(publicationId) {
+    const input = document.getElementById(`comment-input-${publicationId}`);
+    const texte = input.value.trim();
+    if (!texte) return;
+    fetch('/ajouter-commentaire', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({publication_id: publicationId, texte: texte, parent_id: null})
+    }).then(() => location.reload());
+}
+
+function envoyerReponse(publicationId, parentId) {
+    const input = document.getElementById(`reponse-input-${parentId}`);
+    const texte = input.value.trim();
+    if (!texte) return;
+    fetch('/ajouter-commentaire', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({publication_id: publicationId, texte: texte, parent_id: parentId})
+    }).then(() => location.reload());
+}
+
+function afficherFormulaireReponse(commentaireId) {
+    const form = document.getElementById(`reponse-form-${commentaireId}`);
+    form.style.display = form.style.display === 'flex' ? 'none' : 'flex';
+}
+
+function reagirPublication(publicationId, button) {
+    fetch('/reagir-publication', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({publication_id: publicationId})
+    })
+    .then(response => response.json())
+    .then(data => {
+        const spanNb = button.querySelector('.nb-coeurs');
+        spanNb.textContent = data.nb_reactions;
+        if (data.action === 'like') {
+            button.classList.remove('coeur-inactive');
+            button.classList.add('coeur-active');
+        } else {
+            button.classList.remove('coeur-active');
+            button.classList.add('coeur-inactive');
+        }
+    });
+}
+
+function reagirCommentaire(commentaireId, button) {
+    fetch('/reagir-commentaire', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({commentaire_id: commentaireId})
+    })
+    .then(response => response.json())
+    .then(data => {
+        const spanNb = button.querySelector('.nb-coeurs-commentaire');
+        spanNb.textContent = data.nb_reactions;
+        if (data.action === 'like') {
+            button.classList.remove('coeur-inactive');
+            button.classList.add('coeur-active');
+        } else {
+            button.classList.remove('coeur-active');
+            button.classList.add('coeur-inactive');
+        }
+    });
+}
+</script>
+
+<style>
+.admin-actions {
+    display: flex;
+    gap: 10px;
+    padding: 10px 20px;
+    border-top: 1px solid var(--border-color);
+    background: rgba(0,0,0,0.2);
+}
+.btn-modifier:hover {
+    background: #2980b9 !important;
+    transform: scale(1.02);
+}
+.btn-supprimer:hover {
+    background: #c0392b !important;
+    transform: scale(1.02);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="videos-container">
+    <h1>{{ t('video') }}</h1>
+    {% for video in videos %}
+    <div class="video-card">
+        <h3>{{ video.categorie|capitalize }}</h3>
+        <p>{{ video.description }}</p>
+        {% if video.type == 'video' and video.fichier %}
+            <video controls><source src="{{ url_for('static', filename='uploads/' + video.fichier) }}"></video>
+        {% elif video.type == 'lien' and video.lien_video %}
+            <iframe src="{{ video.lien_video|replace('watch?v=', 'embed/') }}"></iframe>
+        {% endif %}
+        <div class="pub-footer"><small>{{ video.date_publication[:10] }}</small><span>❤️ {{ video.nb_reactions }}</span></div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

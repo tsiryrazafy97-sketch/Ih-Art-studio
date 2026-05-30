@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}View - Salon d'Esthétique{% endblock %}
+
+{% block admin_panel %}{% endblock %}
+
+{% block scripts %}
+<script>
+    isAdminView = false;
+    
+    function displayCurrentSlide() {
+        var slide = currentSlide;
+        
+        if(slide === 'importation') {
+            displayPublicationPublic();
+        } else if(slide === 'tarif') {
+            displayTarifPublic();
+        } else if(slide === 'publication') {
+            displayPublicationPublic();
+        } else if(slide === 'video') {
+            displayVideoPublic();
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        var importationBtn = document.getElementById('btn_importation');
+        if(importationBtn) {
+            importationBtn.style.display = 'none';
+        }
+        
+        var reservationHtml = `
+            <div class="reservation-btn" onclick="openReservation()">
+                <a href="#">📅 RÉSERVATION</a>
+            </div>
+        `;
+        var container = document.querySelector('.slide-container');
+        if(container && !document.getElementById('reservation-added')) {
+            var div = document.createElement('div');
+            div.id = 'reservation-added';
+            div.innerHTML = reservationHtml;
+            container.appendChild(div);
+        }
+        
+        changeSlide('publication');
+    });
+    
+    function openReservation() {
+        alert("Reservation: Antsoy ny 034 09 421 19");
+    }
+    
+    window.displayCurrentSlide = displayCurrentSlide;
+    window.openReservation = openReservation;
+    loadData();
+</script>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="register-container">
+    <h1>{{ t('inscription') }}</h1>
+    <form method="POST">
+        <input type="text" name="nom" placeholder="{{ t('nom') }}" required>
+        <input type="date" name="date_naissance" required>
+        <div class="radio-group">
+            <label><input type="radio" name="sexe" value="homme" required> 👨 {{ t('homme') }}</label>
+            <label><input type="radio" name="sexe" value="femme" required> 👩 {{ t('femme') }}</label>
+        </div>
+        <input type="text" name="contact" placeholder="{{ t('email_ou_tel') }}" required>
+        <input type="password" name="mot_de_passe" placeholder="{{ t('mot_de_passe') }}" required>
+        <button type="submit">{{ t('sinscrire') }}</button>
+    </form>
+    <p style="text-align:center; margin-top:15px">{{ t('deja_compte') }} <a href="/login">{{ t('se_connecter') }}</a></p>
+</div>
+{% endblock %}

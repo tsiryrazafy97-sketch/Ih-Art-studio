@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="{{ session.get('lang', 'fr') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FahStudio - Salon d'esthétique</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="{{ session.get('theme', 'dark') }}">
+    <header class="site-header">
+        <div class="toolbar">
+            <form method="POST" action="/changer-langue" style="display:inline">
+                <select name="langue" onchange="this.form.submit()">
+                    <option value="fr" {% if session.lang == 'fr' %}selected{% endif %}>🇫🇷 Français</option>
+                    <option value="mg" {% if session.lang == 'mg' %}selected{% endif %}>🇲🇬 Malagasy</option>
+                </select>
+            </form>
+            <form method="POST" action="/changer-theme" style="display:inline">
+                <button type="submit" name="theme" value="{% if session.theme == 'dark' %}clair{% else %}dark{% endif %}" class="theme-toggle">
+                    {% if session.theme == 'dark' %}☀️ {{ t('mode_clair') }}{% else %}🌙 {{ t('mode_sombre') }}{% endif %}
+                </button>
+            </form>
+        </div>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
+        </div>
+        <div class="slogan">{{ t('slogan') }}</div>
+        <nav class="main-nav">
+            <a href="/">{{ t('accueil') }}</a>
+            <a href="/recherche">{{ t('recherche') }}</a>
+            <a href="/publications">{{ t('publication') }}</a>
+            <a href="/videos">{{ t('video') }}</a>
+            {% if session.user_id %}
+                <a href="/messages">{{ t('messages') }}</a>
+                <a href="/mon-compte">{{ t('mon_compte') }}</a>
+            {% endif %}
+            {% if session.is_admin %}
+                <a href="/admin/ajouter">{{ t('ajouter') }}</a>
+                <a href="/admin/utilisateurs">{{ t('utilisateurs') }}</a>
+            {% elif not session.user_id %}
+                <a href="/login">{{ t('se_connecter') }}</a>
+                <a href="/register">{{ t('inscription') }}</a>
+            {% endif %}
+        </nav>
+    </header>
+    
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer class="site-footer">
+        <div class="footer-address">
+            <p>🏠 Andravohangy - Ambatomitsangana ({{ t('en_face_restaurant') }})</p>
+            <p>📍 Antananarivo Madagascar</p>
+            <p>📞 038 09 421 19</p>
+        </div>
+        <div class="footer-whatsapp">
+            <a href="https://wa.me/261380942119?text={{ t('whatsapp_message') }}" 
+               class="footer-whatsapp-btn" 
+               target="_blank">
+                <img src="https://cdn-icons-png.flaticon.com/512/124/124034.png" alt="WhatsApp">
+                {{ t('whatsapp_contact') }}
+            </a>
+        </div>
+        <div class="footer-copyright">
+            <p>Ih'Art©2026 by TsiryRazafindraibe</p>
+        </div>
+    </footer>
+    
+    <!-- Boutons flottants -->
+    <div class="floating-buttons">
+        <a href="/messages" class="floating-btn messages-btn" id="messages-floating-btn">
+            <span class="notification-badge" id="message-notification-badge" style="display:none;">0</span>
+            <span class="btn-icon">💬</span>
+            <span class="btn-text">{{ t('messages') }}</span>
+        </a>
+        <a href="/notifications" class="floating-btn notifications-btn" id="notifications-floating-btn">
+            <span class="notification-badge" id="notif-badge" style="display:none;">0</span>
+            <span class="btn-icon">🔔</span>
+            <span class="btn-text">{{ t('notifications') }}</span>
+        </a>
+        <a href="https://wa.me/261380942119?text={{ t('whatsapp_message') }}" 
+           class="floating-btn whatsapp-btn" 
+           target="_blank">
+            <span class="btn-icon">💚</span>
+            <span class="btn-text">WhatsApp</span>
+        </a>
+    </div>
+
+    <script>
+        function verifierNotifications() {
+            {% if session.user_id %}
+            fetch('/api/notifications/count')
+                .then(response => response.json())
+                .then(data => {
+                    const messageBadge = document.getElementById('message-notification-badge');
+                    if (data.messages_non_lus > 0) {
+                        messageBadge.textContent = data.messages_non_lus > 99 ? '99+' : data.messages_non_lus;
+                        messageBadge.style.display = 'flex';
+                    } else {
+                        messageBadge.style.display = 'none';
+                    }
+                    
+                    const totalNotifs = (data.nouvelles_publications || 0) + (data.nouveaux_utilisateurs || 0) + (data.messages_non_lus || 0);
+                    const notifBadge = document.getElementById('notif-badge');
+                    if (totalNotifs > 0) {
+                        notifBadge.textContent = totalNotifs > 99 ? '99+' : totalNotifs;
+                        notifBadge.style.display = 'flex';
+                    } else {
+                        notifBadge.style.display = 'none';
+                    }
+                });
+            {% endif %}
+        }
+        
+        setInterval(verifierNotifications, 10000);
+        verifierNotifications();
+        
+        function envoyerCommentaire(publicationId) {
+            const input = document.getElementById(`comment-input-${publicationId}`);
+            const texte = input.value.trim();
+            if (!texte) return;
+            fetch('/ajouter-commentaire', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({publication_id: publicationId, texte: texte, parent_id: null})
+            }).then(() => location.reload());
+        }
+        
+        function envoyerReponse(publicationId, parentId) {
+            const input = document.getElementById(`reponse-input-${parentId}`);
+            const texte = input.value.trim();
+            if (!texte) return;
+            fetch('/ajouter-commentaire', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({publication_id: publicationId, texte: texte, parent_id: parentId})
+            }).then(() => location.reload());
+        }
+        
+        function afficherFormulaireReponse(commentaireId) {
+            const form = document.getElementById(`reponse-form-${commentaireId}`);
+            form.style.display = form.style.display === 'flex' ? 'none' : 'flex';
+        }
+        
+        function reagirPublication(publicationId, button) {
+            fetch('/reagir-publication', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({publication_id: publicationId})
+            })
+            .then(response => response.json())
+            .then(data => {
+                const spanNb = button.querySelector('.nb-coeurs');
+                spanNb.textContent = data.nb_reactions;
+                if (data.action === 'like') {
+                    button.classList.remove('coeur-inactive');
+                    button.classList.add('coeur-active');
+                } else {
+                    button.classList.remove('coeur-active');
+                    button.classList.add('coeur-inactive');
+                }
+            });
+        }
+        
+        function reagirCommentaire(commentaireId, button) {
+            fetch('/reagir-commentaire', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({commentaire_id: commentaireId})
+            })
+            .then(response => response.json())
+            .then(data => {
+                const spanNb = button.querySelector('.nb-coeurs-commentaire');
+                spanNb.textContent = data.nb_reactions;
+                if (data.action === 'like') {
+                    button.classList.remove('coeur-inactive');
+                    button.classList.add('coeur-active');
+                } else {
+                    button.classList.remove('coeur-active');
+                    button.classList.add('coeur-inactive');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

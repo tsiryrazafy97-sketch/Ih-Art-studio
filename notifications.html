@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="notifications-container">
+    <h1>🔔 Notifications</h1>
+    
+    {% if notifications %}
+        <div class="notifications-list">
+            {% for notif in notifications %}
+            <div class="notification-card {% if not notif.lu %}non-lue{% endif %}" data-type="{{ notif.type }}" data-id="{{ notif.id }}">
+                <div class="notification-icon">
+                    {% if notif.type == 'new_message' %}💬
+                    {% elif notif.type == 'new_publication' %}📄
+                    {% elif notif.type == 'new_user' %}👤
+                    {% else %}🔔{% endif %}
+                </div>
+                <div class="notification-content">
+                    <div class="notification-title">{{ notif.title }}</div>
+                    <div class="notification-message">{{ notif.message }}</div>
+                    <div class="notification-date">{{ notif.date[:16] }}</div>
+                </div>
+                <div class="notification-action">
+                    <a href="{{ notif.lien }}" class="notification-link">Voir →</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-notifications">
+            <div class="empty-icon">🔔</div>
+            <h3>Aucune notification</h3>
+            <p>Vous n'avez pas de nouvelles notifications pour le moment.</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.notifications-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.notifications-container h1 {
+    margin-bottom: 25px;
+    color: var(--primary-color);
+}
+
+.notifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.notification-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 18px;
+    background: var(--card-bg);
+    border-radius: 20px;
+    border-left: 4px solid var(--primary-color);
+    transition: 0.3s;
+}
+
+.notification-card.non-lue {
+    background: rgba(255,0,180,0.1);
+    border-left-color: #ff00b4;
+}
+
+.notification-card:hover {
+    transform: translateX(5px);
+}
+
+.notification-icon {
+    font-size: 35px;
+    min-width: 60px;
+    text-align: center;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: var(--primary-color);
+}
+
+.notification-message {
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.notification-date {
+    font-size: 11px;
+    color: #888;
+}
+
+.notification-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: bold;
+    padding: 8px 15px;
+    border-radius: 20px;
+    background: rgba(255,0,180,0.1);
+}
+
+.notification-link:hover {
+    background: var(--primary-color);
+    color: #000;
+}
+
+.empty-notifications {
+    text-align: center;
+    padding: 60px 20px;
+    background: var(--card-bg);
+    border-radius: 30px;
+}
+
+.empty-icon {
+    font-size: 60px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 700px) {
+    .notification-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    .notification-icon {
+        font-size: 40px;
+    }
+}
+</style>
+{% endblock %}

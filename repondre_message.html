@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="messages-container">
+    <h1>💬 Répondre</h1>
+    <form method="POST">
+        <textarea name="contenu" rows="6" placeholder="Votre réponse..." required></textarea>
+        <button type="submit">📤 Envoyer la réponse</button>
+    </form>
+    <a href="/messages" class="back-btn">← Retour</a>
+</div>
+{% endblock %}

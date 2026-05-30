@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="appel-container">
+    <div class="appel-video-container">
+        {% if type_appel == 'video' %}
+        <video id="local-video" class="local-video" autoplay muted playsinline></video>
+        <video id="remote-video" class="remote-video" autoplay playsinline></video>
+        {% else %}
+        <div class="audio-call-container">
+            <div class="audio-photo">
+                {% if autre.photo_profil %}
+                    <img src="{{ url_for('static', filename=autre.photo_profil) }}" alt="photo">
+                {% else %}
+                    👤
+                {% endif %}
+            </div>
+            <h2>Appel avec {{ autre.nom }}</h2>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="appel-controls">
+        {% if type_appel == 'video' %}
+        <button id="toggle-micro" class="control-btn" onclick="toggleMicro()">🎤 Micro</button>
+        <button id="toggle-camera" class="control-btn" onclick="toggleCamera()">📷 Caméra</button>
+        {% endif %}
+        <button class="control-btn end-call" onclick="terminerAppel()">📞 Raccrocher</button>
+    </div>
+    
+    <div id="appel-status" class="appel-status">En appel...</div>
+</div>
+
+<script>
+let localStream = null;
+let peerConnection = null;
+let appelEnCours = true;
+
+const configuration = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+    ]
+};
+
+async function initAppel() {
+    if ('{{ type_appel }}' === 'video') {
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            document.getElementById('local-video').srcObject = localStream;
+            document.getElementById('remote-video').srcObject = localStream;
+        } catch (err) {
+            console.error('Erreur caméra:', err);
+            document.getElementById('appel-status').innerHTML = '⚠️ Impossible d\'accéder à la caméra/micro';
+        }
+    } else {
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            document.getElementById('appel-status').innerHTML = '🔊 Appel vocal en cours...';
+        } catch (err) {
+            console.error('Erreur micro:', err);
+            document.getElementById('appel-status').innerHTML = '⚠️ Impossible d\'accéder au micro';
+        }
+    }
+}
+
+function toggleMicro() {
+    if (localStream) {
+        const audioTrack = localStream.getAudioTracks()[0];
+        if (audioTrack) {
+            audioTrack.enabled = !audioTrack.enabled;
+            const btn = document.getElementById('toggle-micro');
+            btn.style.opacity = audioTrack.enabled ? '1' : '0.5';
+            btn.textContent = audioTrack.enabled ? '🎤 Micro' : '🔇 Muet';
+        }
+    }
+}
+
+function toggleCamera() {
+    if (localStream) {
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+            videoTrack.enabled = !videoTrack.enabled;
+            const btn = document.getElementById('toggle-camera');
+            btn.style.opacity = videoTrack.enabled ? '1' : '0.5';
+            btn.textContent = videoTrack.enabled ? '📷 Caméra' : '🚫 Caméra off';
+        }
+    }
+}
+
+function terminerAppel() {
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+    if (peerConnection) {
+        peerConnection.close();
+    }
+    
+    // Informer le serveur que l'appel est terminé
+    fetch('/api/appel/terminer', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({appel_id: '{{ room_name }}'})
+    });
+    
+    window.close();
+    window.location.href = '/messages';
+}
+
+// Démarrer l'appel
+initAppel();
+
+// Simulation de connexion (à remplacer par WebRTC réel avec serveur de signaling)
+setTimeout(() => {
+    if (appelEnCours) {
+        document.getElementById('appel-status').innerHTML = '📞 En appel... (simulation)';
+    }
+}, 2000);
+</script>
+
+<style>
+.appel-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #1a1a2e;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+.appel-video-container {
+    flex: 1;
+    position: relative;
+    background: #000;
+}
+.local-video {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 200px;
+    height: 150px;
+    border-radius: 15px;
+    object-fit: cover;
+    border: 2px solid white;
+    z-index: 2;
+}
+.remote-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.audio-call-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: white;
+}
+.audio-photo {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+.audio-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.appel-controls {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    padding: 30px;
+    background: #0f0f1a;
+}
+.control-btn {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.control-btn.end-call {
+    background: #e74c3c;
+    color: white;
+}
+.control-btn:active {
+    transform: scale(0.95);
+}
+.appel-status {
+    text-align: center;
+    padding: 15px;
+    background: #0f0f1a;
+    color: #888;
+}
+</style>
+{% endblock %}

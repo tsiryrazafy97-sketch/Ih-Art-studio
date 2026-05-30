@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="admin-ajouter-container">
+    <h1>{{ t('ajouter') }}</h1>
+    <form method="POST" action="/admin/ajouter-publication" enctype="multipart/form-data">
+        <textarea name="description" placeholder="{{ t('description') }}" rows="4" required></textarea>
+        <div class="radio-group">
+            <label><input type="radio" name="categorie" value="tarif" required> {{ t('tarif') }}</label>
+            <label><input type="radio" name="categorie" value="publication"> {{ t('publication') }}</label>
+            <label><input type="radio" name="categorie" value="video"> {{ t('video') }}</label>
+        </div>
+        <div class="radio-group">
+            <label><input type="radio" name="type_media" value="image" onclick="toggleFields('image')" required> 📷 {{ t('fichier') }}</label>
+            <label><input type="radio" name="type_media" value="video" onclick="toggleFields('video')"> 🎥 {{ t('video') }}</label>
+            <label><input type="radio" name="type_media" value="lien" onclick="toggleFields('lien')"> 🔗 {{ t('lien_youtube') }}</label>
+        </div>
+        <div id="file-field"><input type="file" name="fichier"></div>
+        <div id="lien-field" style="display:none"><input type="text" name="lien" placeholder="https://..."></div>
+        <button type="submit">{{ t('publier') }}</button>
+    </form>
+    <div style="text-align:center; margin-top:30px"><a href="/logout" class="deconnexion-btn" style="background:#dc3545">{{ t('deconnexion') }}</a></div>
+</div>
+<script>
+function toggleFields(type) {
+    document.getElementById('file-field').style.display = type === 'lien' ? 'none' : 'block';
+    document.getElementById('lien-field').style.display = type === 'lien' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

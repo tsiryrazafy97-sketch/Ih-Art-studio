@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Admin View - Salon d'Esthétique{% endblock %}
+
+{% block admin_panel %}
+<div class="admin-panel">
+    <h2>➕ MANAMPY VOToaty VAOVAO</h2>
+    <div class="admin-badge">
+        ✅ ADMIN VIEW - Manana fahefana hanampy, manova, mamafa
+        <a href="{{ url_for('admin_logout') }}">🚪 Hivoaka (Admin)</a>
+    </div>
+    
+    <select id="type_slide">
+        <option value="publication">📷 Publication</option>
+        <option value="tarif">💰 Tarif</option>
+        <option value="video">🎬 Vidéo/Reels</option>
+        <option value="importation">📥 Importation</option>
+    </select>
+    
+    <select id="sous_type">
+        <option value="">-- Tsy ilaina --</option>
+        <option value="onglerie">💅 Onglerie (ho an'ny Tarif)</option>
+        <option value="epilation">✨ Epilation (ho an'ny Tarif)</option>
+        <option value="massage">💆 Massage (ho an'ny Tarif)</option>
+    </select>
+    
+    <input type="text" id="title" placeholder="🏷️ Lohateny">
+    <textarea id="description" rows="3" placeholder="📝 Famaritana..."></textarea>
+    <input type="text" id="price" placeholder="💰 Vidiny / Tarif (ohatra: 50.000 Ar)">
+    <input type="file" id="fichier" accept="image/*,video/*">
+    <button onclick="saveItem()">📤 ALEFA</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    isAdminView = true;
+    
+    function displayCurrentSlide() {
+        var slide = currentSlide;
+        if(slide === 'importation') {
+            displayImportationAdmin();
+        } else if(slide === 'tarif') {
+            displayTarifAdmin();
+        } else if(slide === 'publication') {
+            displayPublicationAdmin();
+        } else if(slide === 'video') {
+            displayVideoAdmin();
+        }
+    }
+    
+    window.displayCurrentSlide = displayCurrentSlide;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        loadData();
+    });
+</script>
+{% endblock %}

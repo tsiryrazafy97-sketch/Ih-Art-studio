@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="messages-container">
+    <h1>📖 Message</h1>
+    <div class="message-card">
+        <p><strong>De:</strong> {{ message.expediteur_nom }}</p>
+        <p><strong>Sujet:</strong> {{ message.sujet }}</p>
+        <p><strong>Date:</strong> {{ message.date_envoi }}</p>
+        <hr>
+        <p>{{ message.contenu }}</p>
+    </div>
+    <div style="margin-top:20px">
+        <a href="/messages/repondre/{{ message.id }}" class="btn-message">💬 Répondre</a>
+        <a href="/messages" class="back-btn">← Retour</a>
+    </div>
+</div>
+{% endblock %}

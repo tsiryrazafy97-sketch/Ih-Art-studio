@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="conversation-container">
+    <div class="conversation-header">
+        <div class="conversation-photo" style="position: relative;">
+            {% if autre.photo_profil %}
+                <img src="{{ url_for('static', filename=autre.photo_profil) }}" alt="photo">
+            {% else %}
+                👤
+            {% endif %}
+            <span class="status-dot {% if autre.en_ligne %}online{% else %}offline{% endif %}" id="status-dot"></span>
+        </div>
+        <div>
+            <strong>{{ autre.nom }}</strong>
+        </div>
+        <div class="appel-buttons">
+            <button class="btn-appel audio" onclick="initierAppel('audio')">📞</button>
+            <button class="btn-appel video" onclick="initierAppel('video')">🎥</button>
+        </div>
+        <div style="flex:1"></div>
+        <form method="POST" action="/supprimer-conversation/{{ autre.id }}" onsubmit="return confirm('Supprimer cette conversation?')">
+            <button type="submit" style="background:none; border:none; color:#e74c3c; cursor:pointer;">🗑️</button>
+        </form>
+    </div>
+    
+    <!-- Messages list (tahaka ny teo aloha) -->
+    <div class="messages-list" id="messages-list">
+        {% for msg in messages %}
+        <div class="message {% if msg.expediteur_id == session.user_id %}envoye{% else %}reçu{% endif %}" data-message-id="{{ msg.id }}">
+            <div class="message-bubble">
+                {% if msg.contenu %}{{ msg.contenu }}{% endif %}
+                {% if msg.fichier %}
+                <div class="message-fichier">
+                    {% if msg.type_fichier == 'image' %}
+                        <img src="{{ url_for('static', filename=msg.fichier) }}" alt="image" loading="lazy">
+                    {% elif msg.type_fichier == 'video' %}
+                        <video controls><source src="{{ url_for('static', filename=msg.fichier) }}"></video>
+                    {% else %}
+                        <a href="{{ url_for('static', filename=msg.fichier) }}" target="_blank">📎 Télécharger</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="message-date">{{ msg.date_envoi[:16] }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Message input (tahaka ny teo aloha) -->
+    <div class="message-input-area">
+        <div id="preview-fichier" class="preview-fichier" style="display:none">
+            <img id="preview-img" src="">
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button type="button" onclick="annulerFichier()" style="background:#e74c3c; padding:5px 10px;">❌ Annuler</button>
+                <button type="button" onclick="envoyerMessageAvecFichier()" style="background:#ff00b4; padding:5px 10px;">📤 Envoyer</button>
+            </div>
+        </div>
+        <div class="message-form">
+            <textarea id="message-contenu" rows="2" placeholder="Écrire un message..."></textarea>
+            <label class="file-label">
+                📎
+                <input type="file" name="fichier" id="fichier-input" style="display:none" onchange="previewFichier(this)">
+            </label>
+            <button onclick="envoyerMessage()">📤</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour appel entrant -->
+<div id="appel-entrant-modal" class="modal" style="display:none">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>📞 Appel entrant</h2>
+        </div>
+        <div class="modal-body">
+            <div class="appelant-info">
+                <div class="appelant-photo" id="appelant-photo">👤</div>
+                <h3 id="appelant-nom">...</h3>
+                <p id="appel-type">Appel vidéo...</p>
+            </div>
+            <div class="modal-actions">
+                <button id="accepter-appel" class="btn-accepter">✅ Accepter</button>
+                <button id="refuser-appel" class="btn-refuser">❌ Refuser</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let lastMessageId = {{ messages[-1].id if messages else 0 }};
+    let envoiEnCours = false;
+    let pollingInterval = null;
+    let appelActif = false;
+    let currentAppelId = null;
+    
+    const messagesList = document.getElementById('messages-list');
+    function scrollEnBas() {
+        messagesList.scrollTop = messagesList.scrollHeight;
+    }
+    scrollEnBas();
+    
+    // ==================== APPEL VIDEO ====================
+    
+    function initierAppel(type) {
+        if (appelActif) {
+            alert('Un appel est déjà en cours!');
+            return;
+        }
+        
+        fetch('/api/appel/initier', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                destinataire_id: {{ autre.id }},
+                type_appel: type
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentAppelId = data.appel_id;
+                appelActif = true;
+                // Ouvrir la page d'appel
+                window.open(`/appel/${data.room_name}/${type}/appelant`, '_blank');
+            } else {
+                alert('Erreur lors de l\'initialisation de l\'appel');
+            }
+        });
+    }
+    
+    // Vérifier les appels entrants (polling)
+    function verifierAppelsEntrants() {
+        if (appelActif) return;
+        
+        fetch(`/api/appel/statut/{{ autre.id }}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.appel_entrant) {
+                appelActif = true;
+                currentAppelId = data.appel_id;
+                document.getElementById('appelant-nom').textContent = data.appelant_nom;
+                document.getElementById('appel-type').textContent = data.type === 'video' ? '🎥 Appel vidéo' : '📞 Appel vocal';
+                document.getElementById('appel-entrant-modal').style.display = 'flex';
+                
+                // Gestion des boutons
+                document.getElementById('accepter-appel').onclick = () => repondreAppel(true, data.appel_id, data.type);
+                document.getElementById('refuser-appel').onclick = () => repondreAppel(false, data.appel_id);
+            }
+        });
+    }
+    
+    function repondreAppel(accepte, appelId, type) {
+        fetch('/api/appel/repondre', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                appel_id: appelId,
+                accepte: accepte
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('appel-entrant-modal').style.display = 'none';
+            if (accepte && data.success) {
+                window.open(`/appel/${appelId}/${type}/destinataire`, '_blank');
+            } else {
+                appelActif = false;
+                currentAppelId = null;
+            }
+        });
+    }
+    
+    // Lancer le polling pour les appels entrants
+    setInterval(verifierAppelsEntrants, 3000);
+    
+    // ==================== MESSAGES (tahaka ny teo aloha) ====================
+    
+    function updateStatus() {
+        fetch(`/api/status-en-ligne?user_id={{ autre.id }}`)
+            .then(response => response.json())
+            .then(data => {
+                const statusDot = document.getElementById('status-dot');
+                if (data.en_ligne) {
+                    statusDot.classList.remove('offline');
+                    statusDot.classList.add('online');
+                } else {
+                    statusDot.classList.remove('online');
+                    statusDot.classList.add('offline');
+                }
+            });
+    }
+    updateStatus();
+    setInterval(updateStatus, 30000);
+    
+    let fichierSelectionne = null;
+    
+    function previewFichier(input) {
+        const preview = document.getElementById('preview-fichier');
+        const previewImg = document.getElementById('preview-img');
+        
+        if (input.files && input.files[0]) {
+            fichierSelectionne = input.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                preview.style.display = 'block';
+            }
+            reader.readAsDataURL(input.files[0]);
+            document.querySelector('.message-form').style.display = 'none';
+        }
+    }
+    
+    function annulerFichier() {
+        fichierSelectionne = null;
+        document.getElementById('fichier-input').value = '';
+        document.getElementById('preview-fichier').style.display = 'none';
+        document.querySelector('.message-form').style.display = 'flex';
+    }
+    
+    function envoyerMessage() {
+        if (envoiEnCours) return;
+        
+        const contenu = document.getElementById('message-contenu').value.trim();
+        if (!contenu) return;
+        
+        envoiEnCours = true;
+        
+        const formData = new FormData();
+        formData.append('destinataire_id', '{{ autre.id }}');
+        formData.append('contenu', contenu);
+        
+        fetch('/api/envoyer-message', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('message-contenu').value = '';
+                ajouterMessage(data.message);
+                scrollEnBas();
+            } else if (data.error) {
+                alert(data.error);
+            }
+            envoiEnCours = false;
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            envoiEnCours = false;
+        });
+    }
+    
+    function envoyerMessageAvecFichier() {
+        if (envoiEnCours || !fichierSelectionne) return;
+        
+        envoiEnCours = true;
+        
+        const formData = new FormData();
+        formData.append('destinataire_id', '{{ autre.id }}');
+        formData.append('fichier', fichierSelectionne);
+        
+        fetch('/api/envoyer-message', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                annulerFichier();
+                ajouterMessage(data.message);
+                scrollEnBas();
+            } else if (data.error) {
+                alert(data.error);
+            }
+            envoiEnCours = false;
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            envoiEnCours = false;
+        });
+    }
+    
+    function ajouterMessage(msg) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${msg.expediteur_id == {{ session.user_id }} ? 'envoye' : 'reçu'}`;
+        messageDiv.setAttribute('data-message-id', msg.id);
+        
+        let contenuHtml = '';
+        if (msg.contenu) {
+            contenuHtml += msg.contenu;
+        }
+        
+        if (msg.fichier) {
+            contenuHtml += '<div class="message-fichier">';
+            if (msg.type_fichier == 'image') {
+                contenuHtml += `<img src="/static/${msg.fichier}" alt="image" loading="lazy">`;
+            } else if (msg.type_fichier == 'video') {
+                contenuHtml += `<video controls><source src="/static/${msg.fichier}"></video>`;
+            } else {
+                contenuHtml += `<a href="/static/${msg.fichier}" target="_blank">📎 Télécharger</a>`;
+            }
+            contenuHtml += '</div>';
+        }
+        
+        messageDiv.innerHTML = `
+            <div class="message-bubble">${contenuHtml}</div>
+            <div class="message-date">${msg.date_envoi.slice(0,16)}</div>
+        `;
+        
+        messagesList.appendChild(messageDiv);
+        lastMessageId = msg.id;
+    }
+    
+    // Polling messages
+    setInterval(function() {
+        fetch(`/api/get-messages/{{ autre.id }}?last_id=${lastMessageId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.messages && data.messages.length > 0) {
+                data.messages.forEach(msg => {
+                    const existing = document.querySelector(`.message[data-message-id="${msg.id}"]`);
+                    if (!existing && msg.expediteur_id != {{ session.user_id }}) {
+                        ajouterMessage(msg);
+                    }
+                });
+                scrollEnBas();
+                if (data.messages.length > 0) {
+                    lastMessageId = data.messages[data.messages.length - 1].id;
+                }
+            }
+        })
+        .catch(error => console.error('Polling error:', error));
+    }, 3000);
+    
+    document.getElementById('message-contenu').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            envoyerMessage();
+        }
+    });
+</script>
+
+<style>
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.modal-content {
+    background: var(--card-bg);
+    border-radius: 30px;
+    width: 350px;
+    text-align: center;
+    overflow: hidden;
+}
+.modal-header {
+    background: var(--primary-color);
+    padding: 20px;
+    color: #000;
+}
+.modal-body {
+    padding: 30px;
+}
+.appelant-photo {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--bg-color);
+    margin: 0 auto 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+}
+.modal-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+}
+.btn-accepter, .btn-refuser {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 16px;
+}
+.btn-accepter {
+    background: #2ecc71;
+    color: white;
+}
+.btn-refuser {
+    background: #e74c3c;
+    color: white;
+}
+.conversation-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+.appel-buttons {
+    margin-left: auto;
+    display: flex;
+    gap: 10px;
+}
+.btn-appel {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+.btn-appel.video {
+    color: #2ecc71;
+}
+.btn-appel.audio {
+    color: #3498db;
+}
+.btn-appel:hover {
+    transform: scale(1.1);
+}
+</style>
+{% endblock %}

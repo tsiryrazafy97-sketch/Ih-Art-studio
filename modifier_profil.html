@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="modifier-profil-container">
+    <h1>✏️ Modifier mon profil</h1>
+    <form method="POST">
+        <input type="text" name="nom" value="{{ user.nom }}" placeholder="Nom" required>
+        <input type="date" name="date_naissance" value="{{ user.date_naissance }}" required>
+        <div class="radio-group">
+            <label><input type="radio" name="sexe" value="homme" {% if user.sexe == 'homme' %}checked{% endif %}> 👨 Homme</label>
+            <label><input type="radio" name="sexe" value="femme" {% if user.sexe == 'femme' %}checked{% endif %}> 👩 Femme</label>
+        </div>
+        <input type="email" name="email" value="{{ user.email or '' }}" placeholder="Email">
+        <input type="tel" name="telephone" value="{{ user.telephone or '' }}" placeholder="Téléphone">
+        <hr style="margin:20px 0; border-color:var(--primary-color)">
+        <h3>🔑 Changer le mot de passe</h3>
+        <input type="password" name="ancien_mot_de_passe" placeholder="Ancien mot de passe">
+        <input type="password" name="nouveau_mot_de_passe" placeholder="Nouveau mot de passe">
+        <button type="submit">💾 Enregistrer les modifications</button>
+    </form>
+    <a href="/mon-compte" class="back-btn">← Retour</a>
+</div>
+{% endblock %}
